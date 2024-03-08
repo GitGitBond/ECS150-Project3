@@ -107,7 +107,7 @@ int fs_info(void)
 	printf("data_blk=%d\n",super_block->data_block_start_index);
 	printf("data_blk_count=%d\n",super_block->data_blocks_amount);
 	printf("fat_free_ratio=%d/%d\n",get_free_data_blocks_count(),super_block->data_blocks_amount);
-	printf("rdir_free_ratio=%d/%d\n",get_files_count(root_directory),FS_FILE_MAX_COUNT);
+	printf("rdir_free_ratio=%d/%d\n",FS_FILE_MAX_COUNT-get_files_count(root_directory),FS_FILE_MAX_COUNT);
 	return 0;
 }
 
@@ -276,6 +276,9 @@ int fs_write(int fd, void *buf, size_t count)
 	if(buf==NULL){
         return -1;
 	}
+	if(count==0){
+        return 0;
+	}
 	int block_index=-1;
 	if(opened_files[fd].file->first_data_block_index==0xffff){
         block_index=look_for_one_free_data_block(0);
@@ -323,6 +326,7 @@ int fs_write(int fd, void *buf, size_t count)
         }
         else{
             memset(buffer,0,sizeof(char)*BLOCK_SIZE);
+            block_read(block_index,buffer);
             memcpy(buffer,p,count);
             block_write(block_index,buffer);
             current_offset+=count;
