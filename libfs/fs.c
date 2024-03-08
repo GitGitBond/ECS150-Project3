@@ -363,6 +363,9 @@ int fs_read(int fd, void *buf, size_t count)
 	char buffer[BLOCK_SIZE];
     uint32_t current_offset=opened_files[fd].file_offset;
     int block_index=get_data_block_index_by_offset(&opened_files[fd]);
+    if(block_index==-1){
+        return 0;
+    }
     block_read(block_index,buffer);
     if(count<=BLOCK_SIZE-current_offset%BLOCK_SIZE){
         memcpy(buf,buffer+current_offset%BLOCK_SIZE,count);
@@ -446,6 +449,9 @@ int get_data_block_index_by_offset(file_descriptor_t* file){
     int blocks=offset/BLOCK_SIZE;
     for(int i=0;i<blocks;i++){
         index=file_allocation_table[index];
+        if(index==0xffff){
+            return -1;
+        }
     }
     return index;
 }
