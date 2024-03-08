@@ -296,7 +296,7 @@ int fs_write(int fd, void *buf, size_t count)
 
     char buffer[BLOCK_SIZE];
     block_read(block_index,buffer);
-    int first_write=(count<BLOCK_SIZE-current_offset%BLOCK_SIZE)?count:(BLOCK_SIZE-current_offset);
+    int first_write=(count<BLOCK_SIZE-current_offset%BLOCK_SIZE)?count:(BLOCK_SIZE-current_offset%BLOCK_SIZE);
     memcpy(buffer+current_offset%BLOCK_SIZE,buf,first_write);
     block_write(block_index,buffer);
     total_write+=first_write;
