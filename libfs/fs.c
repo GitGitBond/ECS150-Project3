@@ -290,7 +290,19 @@ int fs_write(int fd, void *buf, size_t count)
 	}
     uint32_t current_offset=opened_files[fd].file_offset;
     block_index=get_data_block_index_by_offset(&opened_files[fd]);
-
+    if(block_index==-1){
+        block_index=opened_files[fd].file->first_data_block_index;
+        while(file_allocation_table[block_index]!=0xffff){
+            block_index=file_allocation_table[block_index];
+        }
+        int last_block_index=block_index;
+        block_index=look_for_one_free_data_block(0);
+        if(block_index==-1){
+            return 0;
+        }
+        file_allocation_table[last_block_index]=block_index;
+        file_allocation_table[block_index]=0xffff;
+    }
     int last_block_index;
     int total_write=0;
 
@@ -391,6 +403,7 @@ int fs_read(int fd, void *buf, size_t count)
             memcpy(p,buffer,sizeof(char)*count);
             total_read+=count;
             count-=count;
+            break;
         }
         block_index=file_allocation_table[block_index];
     }
