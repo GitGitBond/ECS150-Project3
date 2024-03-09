@@ -307,10 +307,15 @@ int fs_write(int fd, void *buf, size_t count)
     int total_write=0;
 
     char buffer[BLOCK_SIZE];
-    block_read(block_index,buffer);
+    if(block_read(block_index+super_block->data_block_start_index,buffer)==-1){
+        return -1;
+    }
     int first_write=(count<BLOCK_SIZE-current_offset%BLOCK_SIZE)?count:(BLOCK_SIZE-current_offset%BLOCK_SIZE);
     memcpy(buffer+current_offset%BLOCK_SIZE,buf,first_write);
-    block_write(block_index,buffer);
+
+    if(block_write(block_index+super_block->data_block_start_index,buffer)==-1){
+        return -1;
+    }
     total_write+=first_write;
 
     char* p=(char*)buf;
@@ -330,7 +335,9 @@ int fs_write(int fd, void *buf, size_t count)
             file_allocation_table[block_index]=0xffff;
         }
         if(count>=BLOCK_SIZE){
-            block_write(block_index,p);
+            if(block_write(block_index+super_block->data_block_start_index,p)==-1){
+                return -1;
+            }
             p+=BLOCK_SIZE;
             count-=BLOCK_SIZE;
             current_offset+=BLOCK_SIZE;
@@ -338,9 +345,13 @@ int fs_write(int fd, void *buf, size_t count)
         }
         else{
             memset(buffer,0,sizeof(char)*BLOCK_SIZE);
-            block_read(block_index,buffer);
+            if(block_read(block_index+super_block->data_block_start_index,buffer)==-1){
+                return -1;
+            }
             memcpy(buffer,p,count);
-            block_write(block_index,buffer);
+            if(block_write(block_index+super_block->data_block_start_index,buffer)==-1){
+                return -1;
+            }
             current_offset+=count;
             total_write+=count;
             count-=count;
@@ -378,7 +389,9 @@ int fs_read(int fd, void *buf, size_t count)
     if(block_index==-1){
         return 0;
     }
-    block_read(block_index,buffer);
+    if(block_read(block_index+super_block->data_block_start_index,buffer)==-1){
+        return -1;
+    }
     if(count<=BLOCK_SIZE-current_offset%BLOCK_SIZE){
         memcpy(buf,buffer+current_offset%BLOCK_SIZE,count);
         opened_files[fd].file_offset+=count;
@@ -393,13 +406,17 @@ int fs_read(int fd, void *buf, size_t count)
     block_index=file_allocation_table[block_index];
     while(count>0&&block_index!=0xffff){
         if(count>=BLOCK_SIZE){
-            block_read(block_index,p);
+            if(block_read(block_index+super_block->data_block_start_index,p)==-1){
+                return -1;
+            }
             p+=BLOCK_SIZE;
             total_read+=BLOCK_SIZE;
             count-=BLOCK_SIZE;
         }
         else{
-            block_read(block_index,buffer);
+            if(block_read(block_index+super_block->data_block_start_index,buffer)==-1){
+                return -1;
+            }
             memcpy(p,buffer,sizeof(char)*count);
             total_read+=count;
             count-=count;
